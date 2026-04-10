@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Detalle del Alumno — {{ alumno.nombre }}{% endblock %}
+{% block page_title %}{{ alumno.nombre }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'alumnos:lista' %}" class="btn btn-outline btn-sm">← Regresar</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2 mb-4">
+
+  <!-- Info del Alumno -->
+  <div class="card">
+    <div class="card-title">📋 Datos del Alumno</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Grupo</div>
+        <div style="font-weight:600;">{{ alumno.grupo.nombre|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Género</div>
+        <div>{{ alumno.get_genero_display|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">CURP</div>
+        <div style="font-size:12px;font-family:monospace;">{{ alumno.curp|default:"—" }}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Beca</div>
+        <div>{% if alumno.becado %}✅ Sí tiene beca{% else %}❌ Sin beca{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Ingreso Familiar</div>
+        <div>{{ alumno.ingreso_familiar|default:"N/A" }} MXN/mes</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Internet en Casa</div>
+        <div>{% if alumno.acceso_internet %}✅ Con acceso{% else %}❌ Sin acceso{% endif %}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Distancia a la Escuela</div>
+        <div>{{ alumno.distancia_escuela_km|default:"N/A" }} km</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);">Estudios del Padre/Madre</div>
+        <div>{{ alumno.nivel_estudios_padre|default:"N/A" }} / {{ alumno.nivel_estudios_madre|default:"N/A" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Última Predicción -->
+  {% with pred=alumno.ultima_prediccion %}
+  <div class="card" style="text-align:center;">
+    <div class="card-title">🤖 Última Predicción de Riesgo</div>
+    {% if pred %}
+      <div class="prob-circle {{ pred.nivel_riesgo }}" style="margin-top:20px;">
+        <span class="prob-number" style="color:{% if pred.nivel_riesgo == 'ALTO' %}var(--red){% elif pred.nivel_riesgo == 'MEDIO' %}var(--yellow){% else %}var(--green){% endif %}">
+          {{ pred.probabilidad_porcentaje|floatformat:0 }}%
+        </span>
+        <span class="prob-label">probabilidad</span>
+      </div>
+      <span class="badge-riesgo {{ pred.nivel_riesgo }}" style="font-size:14px;padding:8px 20px;margin-bottom:16px;display:inline-flex;">
+        {{ pred.emoji_semaforo }} Riesgo {{ pred.nivel_riesgo }}
+      </span>
+      <div style="font-size:11px;color:var(--text-muted);">
+        Periodo: {{ pred.periodo.nombre }} · {{ pred.fecha_prediccion|date:"d/m/Y" }}
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;">
+        <a href="{% url 'prediccion:detalle' pred.pk %}" class="btn btn-outline btn-sm">📊 Ver SHAP</a>
+        <form method="post" action="{% url 'prediccion:recomendacion' pred.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm">✨ Generar Recomendación IA</button>
+        </form>
+      </div>
+    {% else %}
+      <div style="padding:40px;color:var(--text-muted);">
+        <div style="font-size:40px;margin-bottom:8px;">🔍</div>
+        Sin predicción aún
+      </div>
+    {% endif %}
+  </div>
+  {% endwith %}
+</div>
+
+<!-- Calificaciones -->
+<div class="table-container mb-4">
+  <div class="table-header">
+    <div class="table-title">📚 Calificaciones por Periodo</div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Periodo</th><th>Materia</th><th>Calificación</th><th>Estado</th></tr>
+    </thead>
+    <tbody>
+      {% for cal in calificaciones %}
+      <tr>
+        <td style="color:var(--text-secondary);">{{ cal.periodo.nombre }}</td>
+        <td>{{ cal.materia }}</td>
+        <td>
+          <span style="font-weight:700;font-size:15px;color:{% if cal.reprobada %}var(--red){% else %}var(--green){% endif %}">
+            {{ cal.calificacion|floatformat:1 }}
+          </span>
+        </td>
+        <td>
+          {% if cal.reprobada %}
+          <span class="badge-riesgo ALTO">❌ Reprobada</span>
+          {% else %}
+          <span class="badge-riesgo BAJO">✅ Aprobada</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Sin calificaciones registradas</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Asistencias -->
+<div class="table-container">
+  <div class="table-header">
+    <div class="table-title">📅 Registro de Asistencias</div>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Periodo</th><th>Clases Asistidas</th><th>Total Clases</th><th>% Asistencia</th></tr>
+    </thead>
+    <tbody>
+      {% for asist in asistencias %}
+      <tr>
+        <td style="color:var(--text-secondary);">{{ asist.periodo.nombre }}</td>
+        <td>{{ asist.clases_asistidas }}</td>
+        <td>{{ asist.total_clases }}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:8px;background:var(--bg-primary);border-radius:4px;overflow:hidden;">
+              <div style="width:{{ asist.porcentaje_asistencia|floatformat:0 }}%;height:100%;background:{% if asist.porcentaje_asistencia < 70 %}var(--red){% elif asist.porcentaje_asistencia < 85 %}var(--yellow){% else %}var(--green){% endif %};border-radius:4px;"></div>
+            </div>
+            <span style="font-weight:700;color:{% if asist.porcentaje_asistencia < 70 %}var(--red){% elif asist.porcentaje_asistencia < 85 %}var(--yellow){% else %}var(--green){% endif %}">
+              {{ asist.porcentaje_asistencia|floatformat:1 }}%
+            </span>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Sin asistencias registradas</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

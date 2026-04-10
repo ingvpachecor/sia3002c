@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Predicción SHAP — {{ prediccion.alumno.nombre }}{% endblock %}
+{% block page_title %}Análisis de Riesgo — {{ prediccion.alumno.nombre }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'prediccion:lista' %}" class="btn btn-outline btn-sm">← Regresar</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2 mb-4">
+
+  <!-- Resumen de Predicción -->
+  <div class="card" style="text-align:center;">
+    <div class="card-title">🎯 Resultado del Modelo XGBoost</div>
+    <div class="prob-circle {{ prediccion.nivel_riesgo }}" style="margin-top:20px;">
+      <span class="prob-number" style="color:{% if prediccion.nivel_riesgo == 'ALTO' %}var(--red){% elif prediccion.nivel_riesgo == 'MEDIO' %}var(--yellow){% else %}var(--green){% endif %}">
+        {{ prob_porcentaje }}%
+      </span>
+      <span class="prob-label">prob. deserción</span>
+    </div>
+    <span class="badge-riesgo {{ prediccion.nivel_riesgo }}" style="font-size:15px;padding:10px 24px;margin:12px auto;display:inline-flex;">
+      {{ prediccion.emoji_semaforo }} Riesgo {{ prediccion.nivel_riesgo }}
+    </span>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+      Periodo: {{ prediccion.periodo.nombre }}<br>
+      Modelo v{{ prediccion.modelo_version|default:"—" }}<br>
+      {{ prediccion.fecha_prediccion|date:"d/m/Y H:i" }}
+    </div>
+    <div style="margin-top:20px;">
+      <form method="post" action="{% url 'prediccion:recomendacion' prediccion.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success w-full">✨ Generar Recomendación con Gemini IA</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Factores SHAP -->
+  <div class="card">
+    <div class="card-title">📊 Factores Explicativos (Valores SHAP)</div>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px;margin-top:6px;">
+      Barras rojas = factores que AUMENTAN el riesgo · Barras verdes = factores que REDUCEN el riesgo
+    </p>
+    {% if factores_ui %}
+      {% for item in factores_ui %}
+      <div class="shap-item">
+        <div class="shap-label">
+          {% if item.nombre == 'pct_asistencia' %}📅 Asistencia
+          {% elif item.nombre == 'materias_reprobadas' %}📚 Mat. Reprobadas
+          {% elif item.nombre == 'promedio' %}📝 Promedio
+          {% elif item.nombre == 'ingreso_familiar' %}💰 Ingreso Familiar
+          {% elif item.nombre == 'acceso_internet' %}🌐 Internet
+          {% elif item.nombre == 'distancia_escuela' %}📍 Distancia
+          {% else %}{{ item.nombre }}{% endif %}
+        </div>
+        <div class="shap-bar-container">
+          <div class="shap-bar {% if item.positivo %}positive{% else %}negative{% endif %}"
+               style="width: {{ item.width_pct|floatformat:1|stringformat:'s' }}%; min-width: 4px;">
+          </div>
+        </div>
+        <span class="shap-value" style="color:{% if item.positivo %}var(--red){% else %}var(--green){% endif %}">
+          {{ item.valor|floatformat:3 }}
+        </span>
+      </div>
+      {% endfor %}
+
+      <div style="margin-top:16px;padding:12px;background:var(--bg-primary);border-radius:var(--radius);border:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">⚠️ Factor de mayor impacto:</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">
+          {% with top_factor=prediccion.principales_factores.0.0 %}
+              {% if top_factor == 'pct_asistencia' %}Porcentaje de asistencia bajo
+              {% elif top_factor == 'materias_reprobadas' %}Materias reprobadas
+              {% elif top_factor == 'promedio' %}Promedio de calificaciones
+              {% elif top_factor == 'ingreso_familiar' %}Situación económica familiar
+              {% elif top_factor == 'acceso_internet' %}Falta de acceso a internet
+              {% elif top_factor == 'distancia_escuela' %}Distancia al plantel
+              {% else %}{{ top_factor }}{% endif %}
+          {% endwith %}
+        </div>
+      </div>
+    {% else %}
+      <div style="text-align:center;color:var(--text-muted);padding:30px;">
+        Sin valores SHAP disponibles para esta predicción.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recomendación LLM -->
+{% if prediccion.recomendacion_llm %}
+<div class="card mb-4">
+  <div class="card-title">✨ Recomendación de Intervención — Generada por Gemini IA</div>
+  <div style="margin-top:16px;padding:20px;background:var(--bg-primary);border-radius:var(--radius);border:1px solid var(--border);line-height:1.8;white-space:pre-wrap;font-size:13px;color:var(--text-primary);">{{ prediccion.recomendacion_llm }}</div>
+  <div style="margin-top:12px;font-size:10px;color:var(--text-muted);">
+    Generado automáticamente por Google Gemini ({{ prediccion.modelo_version }}). Esta recomendación es un apoyo para el tutor, no reemplaza el criterio profesional docente.
+  </div>
+</div>
+{% else %}
+<div class="card mb-4" style="text-align:center;padding:40px;">
+  <div style="font-size:36px;margin-bottom:12px;">✨</div>
+  <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Recomendación IA no generada aún</div>
+  <div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;">
+    Haz clic en "Generar Recomendación con Gemini IA" para que el modelo proponga un plan de acción personalizado.
+  </div>
+  <form method="post" action="{% url 'prediccion:recomendacion' prediccion.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-success">✨ Generar Recomendación con Gemini IA</button>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}

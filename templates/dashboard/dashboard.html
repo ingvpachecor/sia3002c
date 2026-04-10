@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard — Semáforo de Riesgo{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'prediccion:ejecutar' %}" class="btn btn-primary">▶️ Ejecutar Predicción</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ TARJETAS DE ESTADÍSTICAS ══ -->
+<div class="stats-grid mb-4">
+  <div class="stat-card info">
+    <div class="stat-icon">👨‍🎓</div>
+    <div class="stat-value">{{ total_alumnos }}</div>
+    <div class="stat-label">Alumnos Activos</div>
+  </div>
+
+  <div class="stat-card danger">
+    <div class="stat-icon">🔴</div>
+    <div class="stat-value">{{ total_alto }}</div>
+    <div class="stat-label">Riesgo ALTO — Intervención urgente</div>
+  </div>
+
+  <div class="stat-card warning">
+    <div class="stat-icon">🟡</div>
+    <div class="stat-value">{{ total_medio }}</div>
+    <div class="stat-label">Riesgo MEDIO — Seguimiento</div>
+  </div>
+
+  <div class="stat-card success">
+    <div class="stat-icon">🟢</div>
+    <div class="stat-value">{{ total_bajo }}</div>
+    <div class="stat-label">Riesgo BAJO — Sin acción inmediata</div>
+  </div>
+</div>
+
+{% if total_alumnos == 0 %}
+<!-- ESTADO VACÍO -->
+<div class="card text-center" style="padding:60px 40px;">
+  <div style="font-size:64px;margin-bottom:16px;">⚗️</div>
+  <h3 style="font-size:20px;font-weight:700;margin-bottom:8px;">Sin datos aún</h3>
+  <p style="color:var(--text-secondary);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto;">
+    El sistema está listo pero no hay alumnos registrados.<br>
+    Genera los datos sintéticos de demostración para comenzar.
+  </p>
+  <form method="post" action="{% url 'prediccion:generar_datos' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary" style="font-size:15px;padding:12px 28px;">
+      ⚗️ Generar Datos Sintéticos de Demostración
+    </button>
+  </form>
+  <p style="margin-top:12px;font-size:11px;color:var(--text-muted);">
+    500 alumnos · 5 grupos · 3 periodos · Distribuciones calibradas con estadísticas SEP/INEGI
+  </p>
+</div>
+
+{% else %}
+<!-- FILTROS GLOBALES -->
+<div class="card mb-4" style="padding:16px; background:var(--bg-primary); display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div style="flex:1; min-width:200px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">🔍 Filtrar por Alumno</label>
+    <input type="text" class="global-filter" data-col="0" placeholder="Nombre o CURP..." style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;">
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">🏫 Grupo</label>
+    <select class="global-filter" data-type="grupo" style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;">
+      <option value="">Todos los grupos</option>
+      {% for grupo in grupos %}
+      <option value="{{ grupo.nombre|lower }}">{{ grupo.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">🚦 Nivel de Riesgo</label>
+    <select class="global-filter" data-col="3" style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;">
+      <option value="">Cualquier Riesgo</option>
+      <option value="ALTO">🔴 Riesgo Alto</option>
+      <option value="MEDIO">🟡 Riesgo Medio</option>
+      <option value="BAJO">🟢 Riesgo Bajo</option>
+    </select>
+  </div>
+  <div style="flex:1; min-width:200px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">🔎 Factor Principal</label>
+    <input type="text" class="global-filter" data-col="5" placeholder="Ej. Materias..." style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;">
+  </div>
+</div>
+
+<!-- TABLA POR GRUPOS -->
+{% for grupo in grupos %}
+<div class="table-container mb-4">
+  <div class="table-header">
+    <div>
+      <div class="table-title">🏫 {{ grupo.nombre }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">{{ grupo.escuela.nombre }} · {{ grupo.get_grado_display }} · {{ grupo.turno }}</div>
+    </div>
+    <div class="flex">
+      <span style="font-size:12px;color:var(--text-secondary);">{{ grupo.total_alumnos }} alumnos</span>
+      <a href="{% url 'alumnos:lista' %}?grupo={{ grupo.id }}" class="btn btn-outline btn-sm">Ver todos</a>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Alumno</th>
+        <th>Periodo</th>
+        <th>Asistencia</th>
+        <th>Nivel de Riesgo</th>
+        <th>Probabilidad</th>
+        <th>Factor Principal</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alumno in grupo.alumnos.all %}
+        {% if alumno.activo %}
+          {% with pred=alumno.ultima_prediccion %}
+          <tr onclick="window.location='{% url 'alumnos:detalle' alumno.pk %}'">
+            <td>
+              <div style="font-weight:600;">{{ alumno.nombre }}</div>
+              <div style="font-size:11px;color:var(--text-muted);">{{ alumno.curp|default:"—" }}</div>
+            </td>
+            <td style="color:var(--text-secondary);">
+              {{ pred.periodo.nombre|default:"—" }}
+            </td>
+            <td>
+              {% with asist=alumno.asistencias.last %}
+                {% if asist %}
+                  <span style="font-weight:600;color:{% if asist.porcentaje_asistencia < 70 %}var(--red){% elif asist.porcentaje_asistencia < 85 %}var(--yellow){% else %}var(--green){% endif %}">
+                    {{ asist.porcentaje_asistencia|floatformat:1 }}%
+                  </span>
+                {% else %}—{% endif %}
+              {% endwith %}
+            </td>
+            <td>
+              {% if pred %}
+              <span class="badge-riesgo {{ pred.nivel_riesgo }}">
+                {{ pred.emoji_semaforo }} {{ pred.nivel_riesgo }}
+              </span>
+              {% else %}
+              <span style="color:var(--text-muted);font-size:12px;">Sin predicción</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if pred %}
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;">
+                  <div style="width:{{ pred.probabilidad_porcentaje|floatformat:0 }}%;height:100%;background:{% if pred.nivel_riesgo == 'ALTO' %}var(--red){% elif pred.nivel_riesgo == 'MEDIO' %}var(--yellow){% else %}var(--green){% endif %};border-radius:3px;"></div>
+                </div>
+                <span style="font-size:11px;font-weight:700;color:var(--text-secondary);">{{ pred.probabilidad_porcentaje|floatformat:1|stringformat:"s" }}%</span>
+              </div>
+              {% else %}—{% endif %}
+            </td>
+            <td class="truncate" style="font-size:11px;color:var(--text-muted);">
+              {% if pred and pred.principales_factores %}
+                {{ pred.principales_factores.0.0|capfirst }}
+              {% else %}—{% endif %}
+            </td>
+            <td onclick="event.stopPropagation()">
+              <a href="{% url 'alumnos:detalle' alumno.pk %}" class="btn btn-outline btn-sm">Ver</a>
+              {% if pred %}
+              <a href="{% url 'prediccion:detalle' pred.pk %}" class="btn btn-outline btn-sm">📊 SHAP</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endwith %}
+        {% endif %}
+      {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">Sin alumnos en este grupo</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% empty %}
+<div class="card text-center" style="padding:40px;">
+  <p style="color:var(--text-muted);">No hay grupos registrados.</p>
+  <a href="/admin/alumnos/grupo/add/" class="btn btn-outline" style="margin-top:12px;">+ Agregar Grupo</a>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Animaciones de entrada para las tarjetas de estadística
+  document.querySelectorAll('.stat-card').forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(16px)';
+    setTimeout(() => {
+      card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, i * 80);
+  });
+
+  // Filtros globales y dinámicos (Dashboard)
+  document.querySelectorAll('.global-filter').forEach(input => {
+    input.addEventListener('input', function() {
+      const allFilters = document.querySelectorAll('.global-filter');
+      const groupFilterDropdown = document.querySelector('select[data-type="grupo"]');
+      const groupFilterValue = groupFilterDropdown ? groupFilterDropdown.value.toLowerCase().trim() : '';
+      
+      document.querySelectorAll('.table-container').forEach(container => {
+        const table = container.querySelector('table');
+        if (!table) return;
+
+        const tableTitleElement = container.querySelector('.table-title');
+        const containerGroupBase = tableTitleElement ? tableTitleElement.textContent.toLowerCase() : '';
+        
+        // Evaluar primero si la tabla entera sobrevive al filtro de grupo
+        let containerMatchesGroup = true;
+        if (groupFilterValue && !containerGroupBase.includes(groupFilterValue)) {
+            containerMatchesGroup = false;
+        }
+
+        if (!containerMatchesGroup) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        const rows = table.querySelectorAll('tbody tr');
+        let visibleRows = 0;
+        
+        rows.forEach(row => {
+          // Si es la fila vacía "Sin alumnos"
+          if (row.cells.length === 1) return;
+          
+          let showRow = true;
+          allFilters.forEach(filter => {
+            const isGroupType = filter.getAttribute('data-type') === 'grupo';
+            if (isGroupType) return; // Evaluado a nivel tabla
+
+            const colIdx = filter.getAttribute('data-col');
+            const filterValue = filter.value.toLowerCase().trim();
+            
+            if (filterValue && colIdx !== null) {
+              const cell = row.cells[parseInt(colIdx)];
+              if (cell) {
+                const cellText = cell.textContent.toLowerCase();
+                if (!cellText.includes(filterValue)) {
+                  showRow = false;
+                }
+              }
+            }
+          });
+          row.style.display = showRow ? '' : 'none';
+          if (showRow) visibleRows++;
+        });
+
+        // Ocultar la tarjeta/contenedor del grupo si no hay alumnos que coincidan
+        const textFiltersActive = Array.from(allFilters).filter(f => f.getAttribute('data-type') !== 'grupo').some(f => f.value.trim() !== '');
+        container.style.display = visibleRows === 0 && textFiltersActive ? 'none' : '';
+      });
+    });
+  });
+</script>
+{% endblock %}

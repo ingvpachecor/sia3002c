@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SIA3002C{% endblock %} — Sistema de Predicción de Deserción Escolar</title>
+  <meta name="description" content="Sistema Inteligente de Advertencia Temprana para predicción de deserción escolar en educación media superior usando IA explicable.">
+  <link rel="stylesheet" href="{% static 'css/sia.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo" style="text-align: center;">
+      <span class="logo-icon">🎯</span>
+      <h1 style="font-size: 14px; line-height: 1.3; margin-bottom: 6px;">Sistema de predicción de deserción escolar en EMS con IA</h1>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.5px;">SIA3002C</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+      <a href="{% url 'dashboard:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+
+      <div class="nav-section-label">Gestión Escolar</div>
+      <a href="{% url 'alumnos:lista' %}" class="nav-link {% if 'alumnos' in request.resolver_match.namespace %}active{% endif %}">
+        <span class="nav-icon">👨‍🎓</span> Alumnos
+      </a>
+      <a href="{% url 'alumnos:grupos' %}" class="nav-link">
+        <span class="nav-icon">🏫</span> Grupos
+      </a>
+
+      <div class="nav-section-label">Inteligencia Artificial</div>
+      <a href="{% url 'prediccion:generar_datos' %}" class="nav-link">
+        <span class="nav-icon">⚗️</span> Datos Sintéticos
+      </a>
+      <a href="{% url 'prediccion:entrenar_modelo' %}" class="nav-link">
+        <span class="nav-icon">⚙️</span> Entrenar Modelo
+      </a>
+      <a href="{% url 'prediccion:rendimiento' %}" class="nav-link">
+        <span class="nav-icon">📊</span> Rendimiento IA
+      </a>
+      <a href="{% url 'prediccion:ejecutar' %}" class="nav-link">
+        <span class="nav-icon">▶️</span> Ejecutar Modelo
+      </a>
+      <a href="{% url 'prediccion:lista' %}" class="nav-link {% if 'prediccion' == request.resolver_match.namespace and request.resolver_match.url_name == 'lista' %}active{% endif %}">
+        <span class="nav-icon">🤖</span> Predicciones
+      </a>
+
+      <div class="nav-section-label">Sistema</div>
+      <a href="/admin/" class="nav-link" target="_blank">
+        <span class="nav-icon">⚙️</span> Admin Django
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar">👤</div>
+        <div>
+          <div class="user-name">{{ request.user.username }}</div>
+          <div class="user-role">Administrador</div>
+        </div>
+      </div>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" style="display:block; margin-top:8px; width:100%; text-align:center; background:transparent; border:none; color:inherit; font:inherit; cursor:pointer; text-decoration:underline;">
+          🚪 Cerrar sesión
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ══ CONTENIDO PRINCIPAL ══ -->
+  <main class="main-content">
+    <div class="topbar">
+      <h2>{% block page_title %}SIA3002C{% endblock %}</h2>
+      <div class="topbar-actions">
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </div>
+
+    <!-- Mensajes Django -->
+    {% if messages %}
+    <div class="messages-container">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}" id="msg-{{ forloop.counter }}">
+        {% if 'success' in message.tags %}✅{% elif 'error' in message.tags %}❌{% else %}ℹ️{% endif %}
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script>
+    // Auto-dismiss messages
+    document.querySelectorAll('.alert').forEach(el => {
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(20px)';
+        el.style.transition = '0.4s ease';
+        setTimeout(() => el.remove(), 400);
+      }, 4000);
+    });
+
+    // Active nav link highlight
+    document.querySelectorAll('.nav-link').forEach(link => {
+      if (link.href === window.location.href) {
+        link.classList.add('active');
+      }
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

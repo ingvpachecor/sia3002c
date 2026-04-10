@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Entrenar Modelo IA — SIA3002C{% endblock %}
+{% block page_title %}Entrenar Modelo XGBoost{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:600px; margin:0 auto; padding:40px; text-align:center;">
+    <div style="font-size:48px; margin-bottom:16px;">🤖</div>
+    <h2 style="margin-bottom:12px;">Entrenamiento de Máquina</h2>
+    <p style="color:var(--text-secondary); margin-bottom:30px; font-size:14px; line-height:1.6;">
+        Al iniciar este proceso, el motor XGBoost tomará todos los datos almacenados en la base local, aplicará técnicas de balanceo (SMOTE) para las asimetrías de riesgo, y ajustará un nuevo modelo con una nueva curva lógica de decisiones. Al terminar, las métricas y gráficas se renovarán de forma automática.
+    </p>
+
+    <form method="post" action="{% url 'prediccion:entrenar_modelo' %}" onsubmit="var btn=this.querySelector('button[type=submit]'); btn.style.pointerEvents='none'; btn.style.opacity='0.7'; btn.innerHTML='⏳ Entrenando... (puede tardar un par de minutos)';">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary" style="padding:16px 30px; font-size:16px; font-weight:bold; width:100%;">
+            Iniciar Entrenamiento
+        </button>
+    </form>
+    
+    <div style="margin-top:20px; font-size:12px; color:var(--text-muted);">
+        ⚠️ Importante: Este proceso requiere procesamiento intensivo. Por favor, no cerrar la ventana hasta que el algoritmo termine.
+    </div>
+</div>
+{% endblock %}

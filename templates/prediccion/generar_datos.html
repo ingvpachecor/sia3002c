@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Generar Datos Sintéticos{% endblock %}
+{% block page_title %}⚗️ Generar Cohortes de Demostración{% endblock %}
+{% block content %}
+<div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;">
+
+  <!-- Bloque 1: Histórico -->
+  <div class="card" style="flex:1;min-width:300px;max-width:450px;text-align:center;padding:48px;">
+    <div style="font-size:48px;margin-bottom:12px;">📚</div>
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:12px;color:var(--text-primary);">Datos Históricos
+      (Entrenamiento)</h2>
+    <p style="color:var(--text-secondary);margin-bottom:16px;line-height:1.6;font-size:13px;">
+      Simulación del pasado. Generación de <strong>1,500 alumnos</strong> a lo largo de 3 ciclos (2023 a 2025). Estos
+      datos contendrán <em>ruido estadístico intencional</em> para simular el comportamiento humano impredecible.
+    </p>
+    <div
+      style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:24px;text-align:left;font-size:12px;color:var(--text-muted);">
+      ❗ Se borrará toda la base de datos previa.<br>
+      ✅ Necesario para ejecutar <em>Entrenar Modelo</em> previo a las predicciones a realizar.
+    </div>
+    <form method="post"
+      onsubmit="var btn=this.querySelector('button[type=submit]'); btn.style.pointerEvents='none'; btn.style.opacity='0.7'; btn.innerHTML='⏳ Generando... (Tardará 1-2 min)';">
+      {% csrf_token %}
+      <input type="hidden" name="modo" value="historico">
+      <button type="submit" class="btn btn-secondary" style="font-size:14px;padding:12px 24px;width:100%;">
+        📚 Generar Pasado (2023-2025)
+      </button>
+    </form>
+  </div>
+
+  <!-- Bloque 2: Actual -->
+  <div class="card" style="flex:1;min-width:300px;max-width:450px;text-align:center;padding:48px;">
+    <div style="font-size:48px;margin-bottom:12px;">🎓</div>
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:12px;color:var(--accent);">Generación Actual (Prueba)</h2>
+    <p style="color:var(--text-secondary);margin-bottom:16px;line-height:1.6;font-size:13px;">
+      Simulación del presente mediante la inyección de <strong>500 alumnos nuevos</strong> del ciclo
+      <strong>2026</strong>. Se presentarán sin predicciones precalculadas (limpios), representando el flujo de entrada
+      natural.
+    </p>
+    <div
+      style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:24px;text-align:left;font-size:12px;color:var(--text-muted);">
+      ❗ Solo limpia la generación 2026, si existiera.<br>
+      ✅ Necesario para evaluar la inteligencia artificial mediante <em>Ejecutar Modelo</em>.
+    </div>
+    <form method="post"
+      onsubmit="var btn=this.querySelector('button[type=submit]'); btn.style.pointerEvents='none'; btn.style.opacity='0.7'; btn.innerHTML='⏳ Generando presenten...';">
+      {% csrf_token %}
+      <input type="hidden" name="modo" value="actual">
+      <button type="submit" class="btn btn-primary" style="font-size:14px;padding:12px 24px;width:100%;">
+        🎓 Generar Presente (2026)
+      </button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

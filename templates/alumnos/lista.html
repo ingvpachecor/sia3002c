@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Alumnos{% endblock %}
+{% block page_title %}Alumnos{% endblock %}
+
+{% block topbar_actions %}
+<form method="get" style="display:flex;gap:8px;align-items:center;">
+  <div class="search-box">
+    <input type="text" name="q" value="{{ query }}" placeholder="Buscar alumno...">
+  </div>
+  <select name="grupo" onchange="this.form.submit()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius);padding:8px 12px;font-size:13px;font-family:inherit;">
+    <option value="">Todos los grupos</option>
+    {% for g in grupos %}
+    <option value="{{ g.id }}" {% if grupo_id == g.id|stringformat:"s" %}selected{% endif %}>{{ g.nombre }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-outline btn-sm">🔍</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="table-container">
+  <div class="table-header">
+    <div class="table-title">👨‍🎓 Lista de Alumnos</div>
+    <span style="font-size:12px;color:var(--text-muted);">{{ alumnos.count }} resultados</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th><th>Grupo</th><th>Género</th><th>Beca</th><th>Internet</th><th>Último Riesgo</th><th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alumno in alumnos %}
+      <tr onclick="window.location='{% url 'alumnos:detalle' alumno.pk %}'">
+        <td>
+          <div style="font-weight:600;">{{ alumno.nombre }}</div>
+          <div style="font-size:10px;color:var(--text-muted);font-family:monospace;">{{ alumno.curp|default:"" }}</div>
+        </td>
+        <td style="color:var(--text-secondary);">{{ alumno.grupo.nombre|default:"—" }}</td>
+        <td>{{ alumno.get_genero_display|default:"—" }}</td>
+        <td>{% if alumno.becado %}✅{% else %}—{% endif %}</td>
+        <td>{% if alumno.acceso_internet %}✅{% else %}❌{% endif %}</td>
+        <td>
+          {% with pred=alumno.ultima_prediccion %}
+          {% if pred %}
+          <span class="badge-riesgo {{ pred.nivel_riesgo }}">{{ pred.emoji_semaforo }} {{ pred.nivel_riesgo }}</span>
+          {% else %}<span style="color:var(--text-muted);font-size:12px;">—</span>{% endif %}
+          {% endwith %}
+        </td>
+        <td onclick="event.stopPropagation()">
+          <a href="{% url 'alumnos:detalle' alumno.pk %}" class="btn btn-outline btn-sm">Ver</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">
+        {% if query %}No hay resultados para "{{ query }}"{% else %}No hay alumnos registrados{% endif %}
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

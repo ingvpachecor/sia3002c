@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Ejecutar Predicción{% endblock %}
+{% block page_title %}▶️ Ejecutar Modelo de Predicción{% endblock %}
+{% block content %}
+<div class="card" style="max-width:540px;margin:0 auto;padding:40px;">
+  <div style="font-size:48px;text-align:center;margin-bottom:20px;">🤖</div>
+  <h3 style="font-size:18px;font-weight:700;margin-bottom:8px;text-align:center;">Ejecutar Predicción Batch</h3>
+  <p style="color:var(--text-secondary);font-size:13px;margin-bottom:24px;text-align:center;line-height:1.6;">
+    El modelo XGBoost analizará a todos los alumnos activos y calculará su nivel de riesgo de deserción junto con los factores SHAP explicativos.
+  </p>
+  <form method="post" onsubmit="var btn=this.querySelector('button[type=submit]'); btn.style.pointerEvents='none'; btn.style.opacity='0.7'; btn.innerHTML='⏳ Ejecutando modelo (No cierre la ventana)...';">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Periodo de Evaluación</label>
+      <select name="periodo_id" required style="width:100%;">
+        {% for p in periodos %}
+        <option value="{{ p.id }}">{{ p.nombre }} ({{ p.ciclo_escolar }})</option>
+        {% empty %}
+        <option disabled>Sin periodos registrados</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary w-full" style="padding:12px;font-size:14px;">
+      ▶️ Ejecutar Predicción para Todos los Alumnos
+    </button>
+  </form>
+  <div style="margin-top:16px;padding:12px;background:var(--yellow-bg);border:1px solid var(--yellow-border);border-radius:var(--radius);font-size:12px;color:var(--yellow);">
+    ⚠️ Asegurarse de haber generado los datos sintéticos y entrenado el modelo XGBoost antes de ejecutar.
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Predicciones{% endblock %}
+{% block page_title %}Predicciones de Riesgo{% endblock %}
+{% block topbar_actions %}
+<a href="{% url 'prediccion:ejecutar' %}" class="btn btn-primary">▶️ Ejecutar Modelo</a>
+{% endblock %}
+{% block content %}
+<!-- FILTROS GLOBALES -->
+<div class="card mb-4" style="padding:16px; background:var(--bg-primary); display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap;">
+  <div style="flex:1; min-width:200px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">🔍 Alumno o Grupo</label>
+    <input type="text" class="global-filter" data-col="0" placeholder="Nombre, CURP o Grupo (Ej. 1A)..." style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;">
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">📅 Periodo</label>
+    <input type="text" class="global-filter" data-col="1" placeholder="Ej. Parcial 1..." style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;">
+  </div>
+  <div style="flex:1; min-width:150px;">
+    <label style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">🚦 Nivel de Riesgo</label>
+    <select class="global-filter" data-col="2" style="width:100%;font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;">
+      <option value="">Cualquier Riesgo</option>
+      <option value="ALTO">🔴 Riesgo Alto</option>
+      <option value="MEDIO">🟡 Riesgo Medio</option>
+      <option value="BAJO">🟢 Riesgo Bajo</option>
+    </select>
+  </div>
+</div>
+
+<div class="table-container mb-4">
+  <div class="table-header">
+    <div class="table-title">🤖 Historial de Predicciones</div>
+    <span style="font-size:12px;color:var(--text-muted);">{{ predicciones.count }} predicciones</span>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Alumno</th><th>Periodo</th><th>Nivel de Riesgo</th><th>Probabilidad</th><th>Recomendación IA</th><th>Fecha</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+      {% for pred in predicciones %}
+      <tr onclick="window.location='{% url 'prediccion:detalle' pred.pk %}'">
+        <td><div style="font-weight:600;">{{ pred.alumno.nombre }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ pred.alumno.grupo.nombre|default:"—" }}</div></td>
+        <td style="color:var(--text-secondary);">{{ pred.periodo.nombre }}</td>
+        <td><span class="badge-riesgo {{ pred.nivel_riesgo }}">{{ pred.emoji_semaforo }} {{ pred.nivel_riesgo }}</span></td>
+        <td><span style="font-weight:700;color:{% if pred.nivel_riesgo == 'ALTO' %}var(--red){% elif pred.nivel_riesgo == 'MEDIO' %}var(--yellow){% else %}var(--green){% endif %}">{{ pred.probabilidad_porcentaje|floatformat:1 }}%</span></td>
+        <td>{% if pred.recomendacion_llm %}<span style="color:var(--green);font-size:12px;">✅ Generada</span>{% else %}<span style="color:var(--text-muted);font-size:12px;">— Pendiente</span>{% endif %}</td>
+        <td style="color:var(--text-muted);font-size:12px;">{{ pred.fecha_prediccion|date:"d/m/Y" }}</td>
+        <td onclick="event.stopPropagation()"><a href="{% url 'prediccion:detalle' pred.pk %}" class="btn btn-outline btn-sm">📊 SHAP</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">
+        <div style="font-size:32px;margin-bottom:8px;">🤖</div>
+        Sin predicciones. <a href="{% url 'prediccion:ejecutar' %}" style="color:var(--accent);">Ejecuta el modelo</a> primero.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Filtros globales (Lista Predicciones)
+  document.querySelectorAll('.global-filter').forEach(input => {
+    input.addEventListener('input', function() {
+      const allFilters = document.querySelectorAll('.global-filter');
+      const table = document.querySelector('table');
+      if (!table) return;
+      
+      const rows = table.querySelectorAll('tbody tr');
+      
+      rows.forEach(row => {
+        if (row.cells.length === 1) return; // Omitir la fila vacía "Sin predicciones"
+        
+        let showRow = true;
+        allFilters.forEach(filter => {
+          const colIdx = filter.getAttribute('data-col');
+          const filterValue = filter.value.toLowerCase().trim();
+          
+          if (filterValue && colIdx !== null) {
+            const cell = row.cells[parseInt(colIdx)];
+            if (cell) {
+              const cellText = cell.textContent.toLowerCase();
+              if (!cellText.includes(filterValue)) {
+                showRow = false;
+              }
+            }
+          }
+        });
+        row.style.display = showRow ? '' : 'none';
+      });
+    });
+  });
+</script>
+{% endblock %}
