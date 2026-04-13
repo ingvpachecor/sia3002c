@@ -13,7 +13,7 @@
     </div>
     <div style="font-size:13px; color:var(--text-secondary); font-weight:600;">Accuracy (Precisión Global)</div>
   </div>
-  
+
   <div class="card" style="text-align: center;">
     <div style="font-size:24px;">📈</div>
     <div style="font-size:32px; font-weight:800; color:var(--text-primary); margin:8px 0;">
@@ -25,17 +25,17 @@
   <div class="card" style="text-align: center;">
     <div style="font-size:24px;">🚨</div>
     <div style="font-size:32px; font-weight:800; color:var(--text-primary); margin:8px 0;">
-      {{ metrics.recall_alto|floatformat:4 }}
+      {{ metrics.report_json.weighted_avg.recall|floatformat:4 }}
     </div>
-    <div style="font-size:13px; color:var(--text-secondary); font-weight:600;">Recall (Sensibilidad)</div>
+    <div style="font-size:13px; color:var(--text-secondary); font-weight:600;">Recall</div>
   </div>
-  
+
   <div class="card" style="text-align: center;">
     <div style="font-size:24px;">⚠️</div>
     <div style="font-size:32px; font-weight:800; color:var(--text-primary); margin:8px 0;">
-      {{ metrics.f1_alto|floatformat:4 }}
+      {{ metrics.report_json.weighted_avg.f1_score|floatformat:4 }}
     </div>
-    <div style="font-size:13px; color:var(--text-secondary); font-weight:600;">F1 Score (Riesgo Alto)</div>
+    <div style="font-size:13px; color:var(--text-secondary); font-weight:600;">F1 Score</div>
   </div>
 
   <div class="card" style="text-align: center;">
@@ -48,6 +48,7 @@
 </div>
 
 <!-- Gráficas Visuales -->
+<!--
 <div class="grid-2 mb-4">
   <div class="card">
     <div class="card-title">Matriz de Confusión</div>
@@ -55,9 +56,10 @@
       Evalúa falsos positivos y falsos negativos.
     </p>
     {% if graficas.confusion_matrix %}
-      <img src="data:image/png;base64,{{ graficas.confusion_matrix }}" style="width:100%; border-radius:8px; display:block; margin:auto;" alt="Matriz de Confusión">
+    <img src="data:image/png;base64,{{ graficas.confusion_matrix }}"
+      style="width:100%; border-radius:8px; display:block; margin:auto;" alt="Matriz de Confusión">
     {% else %}
-      <div style="text-align:center; padding:30px; color:var(--text-muted);">Imagen no disponible</div>
+    <div style="text-align:center; padding:30px; color:var(--text-muted);">Imagen no disponible</div>
     {% endif %}
   </div>
 
@@ -67,9 +69,10 @@
       Capacidad del modelo para distinguir entre clases.
     </p>
     {% if graficas.roc_curve %}
-      <img src="data:image/png;base64,{{ graficas.roc_curve }}" style="width:100%; border-radius:8px; display:block; margin:auto;" alt="Curva ROC">
+    <img src="data:image/png;base64,{{ graficas.roc_curve }}"
+      style="width:100%; border-radius:8px; display:block; margin:auto;" alt="Curva ROC">
     {% else %}
-      <div style="text-align:center; padding:30px; color:var(--text-muted);">Imagen no disponible</div>
+    <div style="text-align:center; padding:30px; color:var(--text-muted);">Imagen no disponible</div>
     {% endif %}
   </div>
 </div>
@@ -80,11 +83,13 @@
     Peso relativo que el árbol XGBoost asignó a cada variable.
   </p>
   {% if graficas.feature_importance %}
-    <img src="data:image/png;base64,{{ graficas.feature_importance }}" style="width:100%; max-width:800px; border-radius:8px; display:block; margin:auto;" alt="Importancia de Variables">
+  <img src="data:image/png;base64,{{ graficas.feature_importance }}"
+    style="width:100%; max-width:800px; border-radius:8px; display:block; margin:auto;" alt="Importancia de Variables">
   {% else %}
-    <div style="text-align:center; padding:30px; color:var(--text-muted);">Imagen no disponible</div>
+  <div style="text-align:center; padding:30px; color:var(--text-muted);">Imagen no disponible</div>
   {% endif %}
 </div>
+-->
 
 {% else %}
 <!-- Modelo no entrenado -->
@@ -92,10 +97,11 @@
   <div style="font-size:48px; margin-bottom:20px;">📉</div>
   <h2 style="margin-bottom:10px; color:var(--text-primary);">Aún no hay métricas disponibles</h2>
   <p style="color:var(--text-secondary); margin-bottom:30px; max-width:500px; margin-left:auto; margin-right:auto;">
-    El modelo XGBoost no ha sido entrenado o no cuenta con información de métricas (`metrics.json`). 
+    El modelo XGBoost no ha sido entrenado o no cuenta con información de métricas (`metrics.json`).
     Debes entrenar el modelo primero (o reentrenarlo) para que las gráficas y estadísticas se generen.
   </p>
-  <p style="font-size:13px; background:var(--bg-primary); padding:10px; font-family:monospace; border-radius:4px; display:inline-block;">
+  <p
+    style="font-size:13px; background:var(--bg-primary); padding:10px; font-family:monospace; border-radius:4px; display:inline-block;">
     $ python prediccion/ml/train_model.py
   </p>
 </div>

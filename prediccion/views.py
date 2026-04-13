@@ -152,6 +152,22 @@ def rendimiento_modelo(request):
     if metrics_file.exists():
         with open(metrics_file, 'r') as f:
             metrics_data = json.load(f)
+            
+        # Parseo de llaves prohibidas para Django Templates
+        if 'report_json' in metrics_data:
+            reporte = metrics_data['report_json']
+            
+            # Arreglar espacios en promedios
+            if 'weighted avg' in reporte:
+                reporte['weighted_avg'] = reporte.pop('weighted avg')
+            if 'macro avg' in reporte:
+                reporte['macro_avg'] = reporte.pop('macro avg')
+                
+            # Arreglar el guión prohibido en "f1-score"
+            for info_categoria in reporte.values():
+                if isinstance(info_categoria, dict) and 'f1-score' in info_categoria:
+                    info_categoria['f1_score'] = info_categoria.pop('f1-score')
+                    
         context['metrics'] = metrics_data
         
         # Cargar imagenes en base64 para evitar problemas de estáticos locales temporales
